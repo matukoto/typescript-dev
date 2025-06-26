@@ -1,10 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { v7 as uuidv7 } from "uuid";
-import { z } from "zod";
 
 const server = new McpServer({
-	name: "uuid",
+	name: "utility-server",
 	version: "0.0.1",
 	capabilities: {
 		resources: {},
@@ -12,34 +10,30 @@ const server = new McpServer({
 	},
 });
 
-const uuid = uuidv7();
-
-server.tool("get-uuid", "uuidを発行します", {}, async () => {
-	return {
-		content: [{ type: "text", text: "UUIDは " + validateUuid(uuid) }],
-	};
-});
-
-function validateUuid(value: unknown): string {
-	try {
-		return z.string().uuid().parse(value);
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			throw new Error(
-				`UUID validation failed: ${error.errors.map((e) => e.message).join(",")}`,
-			);
-		}
-		throw error;
-	}
-}
+server.tool(
+	"get-server-time",
+	"サーバーの現在時刻を取得します。",
+	{},
+	async () => {
+		return {
+			content: [
+				{
+					type: "text",
+					text: `サーバーの現在時刻は ${new Date().toLocaleString()} です。`,
+				},
+			],
+		};
+	},
+);
 
 async function main() {
 	const transport = new StdioServerTransport();
 	await server.connect(transport);
-	console.log("Server is running.");
+	// console.log は stdout になってしまうので、Jsonパースの対象になりエラーになる
+	//console.log("Server is running...");
 }
 
 main().catch((error) => {
-	console.error("Error starting server: ", error);
+	console.error("Error starting server:", error);
 	process.exit(1);
 });
