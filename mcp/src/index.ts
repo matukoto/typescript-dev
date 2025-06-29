@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { v4, v7 } from "uuid";
+import { z } from "zod";
 
 const server = new McpServer({
 	name: "utility-server",
@@ -55,6 +56,54 @@ server.tool(
 					text: v7(),
 				},
 			],
+		};
+	},
+);
+
+const weatherInputSchema = {
+	location: z.string().describe("City name"),
+};
+
+const weatherOutputSchema = {
+	location: z.string().describe("location name"),
+	temperature: z.string().describe("current temperature"),
+	conditions: z.string().describe("current condition"),
+};
+
+server.registerTool(
+	"getWeather",
+	{
+		title: "Get Weather",
+		description: "you can get weather from location.",
+		inputSchema: weatherInputSchema,
+		outputSchema: weatherOutputSchema,
+	},
+	async ({ location }) => {
+		const dummyWeather = {
+			location: location,
+			temperature: "72",
+			conditions: "sunny",
+		} satisfies z.infer<z.ZodObject<typeof weatherOutputSchema>>;
+		if (location === "error-location") {
+			return {
+				content: [
+					{
+						type: "text",
+						text: "An error occured",
+					},
+				],
+				isError: true,
+			};
+		}
+		return {
+			structuredContent: dummyWeather,
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(dummyWeather),
+				},
+			],
+			isError: false,
 		};
 	},
 );
